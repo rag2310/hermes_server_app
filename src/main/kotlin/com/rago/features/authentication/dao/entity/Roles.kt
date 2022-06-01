@@ -1,4 +1,4 @@
-package com.rago.data.database.dao
+package com.rago.features.authentication.dao.entity
 
 import org.jetbrains.exposed.sql.Table
 
