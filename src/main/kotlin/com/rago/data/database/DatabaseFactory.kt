@@ -33,5 +33,3 @@ object DatabaseFactory {
     suspend fun <T> dbQuery(block: suspend () -> T): T =
         newSuspendedTransaction { block() }
 }
-
-///jdbcURL = "jdbc:postgresql://localhost:5432/hermes_db?user=hermes&password=Rag@ort23"

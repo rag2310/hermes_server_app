@@ -10,7 +10,7 @@ import com.rago.features.authentication.model.UserInfoRolDto
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
-import java.util.UUID
+import java.util.*
 
 class AuthenticationDaoImpl : AuthenticationDao {
     override fun login(request: LoginRequestDto): UserInfoDto? {
