@@ -8,13 +8,13 @@ plugins {
     application
     kotlin("jvm") version "1.6.21"
     kotlin("plugin.serialization") version "1.4.32"
+    id("com.github.johnrengelman.shadow") version "7.0.0"
 }
 
 group = "com.rago"
 version = "0.0.1"
 application {
-    mainClass.set("com.rago.ApplicationKt")
-
+    mainClass.set("io.ktor.server.netty.EngineMain")
     val isDevelopment: Boolean = project.ext.has("development")
     applicationDefaultJvmArgs = listOf("-Dio.ktor.development=$isDevelopment")
 }
@@ -22,6 +22,14 @@ application {
 repositories {
     mavenCentral()
     maven { url = uri("https://maven.pkg.jetbrains.space/public/p/ktor/eap") }
+}
+
+tasks {
+    shadowJar {
+        manifest {
+            attributes(Pair("Main-Class", "io.ktor.server.netty.EngineMain"))
+        }
+    }
 }
 
 dependencies {
@@ -48,4 +56,5 @@ dependencies {
     implementation("io.ktor:ktor-server-auth-jwt:$ktor_version")
 
     implementation("io.insert-koin:koin-ktor:3.2.0")
+    implementation("org.apache.commons:commons-email:1.5")
 }

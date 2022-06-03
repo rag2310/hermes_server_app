@@ -16,8 +16,6 @@ val authenticationModule = module {
     single(named("jwtSecretProperty")) {
         ConfigFactory.load().getString("jwt.secret").toString()
     }
-    single { AuthenticationDaoImpl() } bind AuthenticationDao::class
-    single { AuthenticationDataImpl(get(), get()) } bind AuthenticationData::class
-
-
+    single { AuthenticationDaoImpl(get(),get()) } bind AuthenticationDao::class
+    single { AuthenticationDataImpl(get(),get()) } bind AuthenticationData::class
 }
