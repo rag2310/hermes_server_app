@@ -14,6 +14,7 @@ fun ResultRow.fromUserDaoToUserInfo() = UserInfoDto(
     password = this[Users.password],
     username = this[Users.username],
     idRol = this[Users.idRol],
+    status = this[Users.status]
 )
 
 fun ResultRow.fromUserDaoToUserInfoRol() = UserInfoRolDto(

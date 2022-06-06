@@ -1,27 +1,21 @@
 package com.rago.features.authentication.dao
 
-import com.rago.features.authentication.dao.entity.Managements
 import com.rago.features.authentication.dao.entity.Roles
 import com.rago.features.authentication.dao.entity.Users
-import com.rago.features.authentication.dao.mapper.fromManagements
 import com.rago.features.authentication.dao.mapper.fromUserDaoToUserInfo
 import com.rago.features.authentication.dao.mapper.fromUserDaoToUserInfoRol
 import com.rago.features.authentication.jwt.JwtManager
 import com.rago.features.authentication.model.LoginRequestDto
-import com.rago.features.authentication.model.ManagementsDto
 import com.rago.features.authentication.model.UserInfoDto
 import com.rago.features.authentication.model.UserInfoRolDto
+import com.rago.features.authentication.model.UsersStatus
 import com.rago.model.FlowResult
 import com.rago.utils.secure.SecureEncryption
 import io.ktor.http.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.or
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
 import java.util.*
 
 class AuthenticationDaoImpl(
@@ -130,52 +124,57 @@ class AuthenticationDaoImpl(
     override fun getUserInfoByEmail(email: String): UserInfoDto? {
         val userInfo = transaction {
             return@transaction Users.select {
-                Users.email eq email
+                (Users.email eq email) and (Users.status eq UsersStatus.US_001.status)
             }.singleOrNull()?.fromUserDaoToUserInfo()
         }
         return userInfo
     }
 
-    override fun createManagement(userInfoDto: UserInfoDto): ManagementsDto? {
-        val managements = transaction {
-            Managements.insert {
-                it[id] = UUID.randomUUID()
-                it[type] = 0
-                it[param] = Date().time
-                it[status] = 0
-                it[idUser] = userInfoDto.id
+    override fun updateStatus(id: UUID, status: UsersStatus) {
+        transaction {
+            Users.update({ Users.id eq id }) {
+                it[this.status] = status.status
             }
         }
-
-        if (managements.resultedValues != null) {
-            if (managements.resultedValues!!.isNotEmpty()) {
-                return managements.resultedValues!![0].fromManagements()
-            }
-        }
-        return null
     }
 
-    override fun getManagement(id: UUID): UserInfoDto? {
-        val userInfoDto = transaction {
-            val managementsDto = Managements.select {
-                (Managements.id eq id)
-            }.singleOrNull()?.fromManagements()
-
-            if (managementsDto != null) {
-                Users.update({ Users.id eq managementsDto.idUser }) {
-                    val newPassword = (1..10)
-                        .map { _ -> kotlin.random.Random.nextInt(0, charPool.size) }
-                        .map(charPool::get)
-                        .joinToString("")
-                    it[password] = secureEncryption.encryptString(newPassword)
-                }
-
-                val users = Users.select {
-                    (Users.id eq managementsDto.idUser)
+    override fun changePassword(id: UUID, newPassword: String): UserInfoDto? {
+        return transaction {
+            val update = Users.update({ (Users.id eq id) and (Users.status eq UsersStatus.US_002.status) }) {
+                it[password] = newPassword
+                it[status] = UsersStatus.US_003.status
+            }
+            return@transaction if (update > 0) {
+                Users.select {
+                    (Users.id eq id)
                 }.singleOrNull()?.fromUserDaoToUserInfo()
+            } else null
+        }
+    }
 
-                if (users != null) {
-                    return@transaction users
+    override fun updatePassword(username: String, oldPassword: String, newPassword: String): UserInfoDto? {
+        return transaction {
+
+            val user = Users.select {
+                (Users.username eq username)
+            }.singleOrNull()?.fromUserDaoToUserInfo()
+
+            if (user != null) {
+                if (oldPassword == secureEncryption.decryptString(user.password!!)) {
+
+                    val encryptionPassword = secureEncryption.encryptString(newPassword)
+                    val update = Users.update({
+                        (Users.username eq username)
+                    }) {
+                        it[password] = encryptionPassword
+                        it[status] = UsersStatus.US_001.status
+                    }
+
+                    user.password = null
+                    user.status = UsersStatus.US_001.status
+                    return@transaction if (update > 0) {
+                        user
+                    } else null
                 } else {
                     return@transaction null
                 }
@@ -183,8 +182,5 @@ class AuthenticationDaoImpl(
                 return@transaction null
             }
         }
-        return userInfoDto
     }
-
-    private val charPool: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9')
 }

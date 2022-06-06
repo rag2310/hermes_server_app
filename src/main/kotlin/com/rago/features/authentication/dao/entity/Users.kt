@@ -8,6 +8,7 @@ object Users : Table() {
     val password = text("password")
     val username = text("username")
     val idRol = (integer("id_rol") references Roles.id)
+    val status = text("status")
 
     override val primaryKey: PrimaryKey = PrimaryKey(id, name = "users_pkey")
 

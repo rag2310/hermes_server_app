@@ -8,10 +8,12 @@ import io.ktor.server.auth.jwt.*
 import io.ktor.server.response.*
 
 object JwtConfig {
-    const val ROL_ADMIN = "ADMIN"
-    const val ROL_CLIENT = "CLIENT"
-    const val ROL_DEALER = "DEALER"
-    const val ROL_USERS = "USERS"
+    private const val ROL_ADMIN = "ADMIN"
+    private const val ROL_CLIENT = "CLIENT"
+    private const val ROL_DEALER = "DEALER"
+    private const val ROL_USERS = "USERS"
+
+    fun getAllRoles() = listOf(ROL_USERS, ROL_DEALER, ROL_CLIENT)
 
     private fun validateRol(jwtCredential: JWTCredential, rolJwt: Int): JWTPrincipal? {
         return if (jwtCredential.payload.getClaim("rol").asInt() == rolJwt) {
